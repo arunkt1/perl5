@@ -8669,9 +8669,8 @@ S_scan_ident(pTHX_ char *s, char *dest, STRLEN destlen, I32 ck_uni)
 /* Is the byte 'd' a legal single character identifier name?  'u' is true
  * iff Unicode semantics are to be used.  The legal ones are any of:
  *  a) all ASCII characters except:
- *          1) space-type ones, like \t and SPACE;
-            2) NUL;
- *          3) '{'
+ *          1) control and space-type ones, like NUL, SOH, \t, and SPACE;
+ *          2) '{'
  *     The final case currently doesn't get this far in the program, so we
  *     don't test for it.  If that were to change, it would be ok to allow it.
  *  c) When not under Unicode rules, any upper Latin1 character
@@ -8689,8 +8688,8 @@ S_scan_ident(pTHX_ char *s, char *dest, STRLEN destlen, I32 ck_uni)
                          : (isGRAPH_L1(*s)                                    \
                             && LIKELY((U8) *(s) != LATIN1_TO_NATIVE(0xAD)))))
 #else
-#   define VALID_LEN_ONE_IDENT(s, is_utf8) (! isSPACE_A(*(s))                 \
-                                            && LIKELY(*(s) != '\0')           \
+#   define VALID_LEN_ONE_IDENT(s, is_utf8) (   ! isSPACE_A(*(s))              \
+                                            && ! isCNTRL_A(*(s))              \
                                             && (! is_utf8                     \
                                                 || isASCII_utf8((U8*) (s))    \
                                                 || isIDFIRST_utf8((U8*) (s))))
@@ -8709,13 +8708,7 @@ S_scan_ident(pTHX_ char *s, char *dest, STRLEN destlen, I32 ck_uni)
             : (! isGRAPH_L1( (U8) *s)
                || UNLIKELY((U8) *(s) == LATIN1_TO_NATIVE(0xAD))))
         {
-            /* Split messages for back compat */
-            if (isCNTRL_A( (U8) *s)) {
-                deprecate("literal control characters in variable names");
-            }
-            else {
-                deprecate("literal non-graphic characters in variable names");
-            }
+            deprecate("literal non-graphic characters in variable names");
         }
         
         if (is_utf8) {
